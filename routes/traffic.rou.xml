@@ -1,0 +1,19 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5"
+           length="5" maxSpeed="13.9"/>
+
+    <!-- These road IDs are examples. Replace them with your IDs from NetEdit. -->
+    <route id="north_south" edges="north_in south_out"/>
+    <route id="south_north" edges="south_in north_out"/>
+    <route id="east_west" edges="east_in west_out"/>
+    <route id="west_east" edges="west_in east_out"/>
+
+    <flow id="ns_traffic" type="car" route="north_south"
+          begin="0" end="3600" vehsPerHour="500"/>
+    <flow id="sn_traffic" type="car" route="south_north"
+          begin="0" end="3600" vehsPerHour="500"/>
+    <flow id="ew_traffic" type="car" route="east_west"
+          begin="0" end="3600" vehsPerHour="900"/>
+    <flow id="we_traffic" type="car" route="west_east"
+          begin="0" end="3600" vehsPerHour="900"/>
+</routes>
