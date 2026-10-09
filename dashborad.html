@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Traffic Signal Optimizer</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#eef2f7;
+    color:#172033;
+}
+
+.header{
+    height:75px;
+    background:#172033;
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 28px;
+}
+
+.header h1{
+    font-size:22px;
+}
+
+.header p{
+    font-size:12px;
+    color:#bfc8d8;
+    margin-top:4px;
+}
+
+.status{
+    background:#16a34a;
+    padding:9px 15px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.container{
+    width:96%;
+    max-width:1450px;
+    margin:auto;
+    padding:20px 0;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.stat{
+    background:white;
+    padding:17px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.07);
+}
+
+.stat-title{
+    font-size:11px;
+    color:#6b7280;
+    margin-bottom:8px;
+}
+
+.stat-value{
+    font-size:25px;
+    font-weight:bold;
+}
+
+.layout{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 2px 10px rgba(0,0,0,.07);
+}
+
+.card h2{
+    font-size:18px;
+    margin-bottom:15px;
+}
+
+/* =====================================================
+   JUNCTION
+===================================================== */
+
+.junction{
+    position:relative;
+    width:100%;
+    height:620px;
+    overflow:hidden;
+    border-radius:10px;
+    background:#aeb6bf;
+}
+
+/* Horizontal road */
+
+.horizontal-road{
+    position:absolute;
+    left:0;
+    right:0;
+    top:215px;
+    height:190px;
+    background:#30343b;
+}
+
+/* Vertical road */
+
+.vertical-road{
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:calc(50% - 95px);
+    width:190px;
+    background:#30343b;
+}
+
+/* Road markings */
+
+.h-center{
+    position:absolute;
+    left:0;
+    right:0;
+    top:309px;
+    height:3px;
+    background:repeating-linear-gradient(
+        to right,
+        white 0 28px,
+        transparent 28px 50px
+    );
+    z-index:2;
+}
+
+.v-center{
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:calc(50% - 1.5px);
+    width:3px;
+    background:repeating-linear-gradient(
+        to bottom,
+        white 0 28px,
+        transparent 28px 50px
+    );
+    z-index:2;
+}
+
+/* Lane divider */
+
+.h-lane-top{
+    position:absolute;
+    left:0;
+    right:0;
+    top:262px;
+    border-top:2px dashed rgba(255,255,255,.35);
+    z-index:3;
+}
+
+.h-lane-bottom{
+    position:absolute;
+    left:0;
+    right:0;
+    top:357px;
+    border-top:2px dashed rgba(255,255,255,.35);
+    z-index:3;
+}
+
+.v-lane-left{
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:calc(50% - 48px);
+    border-left:2px dashed rgba(255,255,255,.35);
+    z-index:3;
+}
+
+.v-lane-right{
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:calc(50% + 45px);
+    border-left:2px dashed rgba(255,255,255,.35);
+    z-index:3;
+}
+
+/* =====================================================
+   LABELS
+===================================================== */
+
+.label{
+    position:absolute;
+    z-index:30;
+    background:white;
+    padding:7px 10px;
+    border-radius:5px;
+    font-size:12px;
+    font-weight:bold;
+    box-shadow:0 2px 5px rgba(0,0,0,.2);
+}
+
+.label1{
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+}
+
+.label2{
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+}
+
+.label3{
+    bottom:12px;
+    left:50%;
+    transform:translateX(-50%);
+}
+
+.label4{
+    right:12px;
+    top:50%;
+    transform:translateY(-50%);
+}
+
+/* =====================================================
+   TRAFFIC LIGHTS
+===================================================== */
+
+.signal{
+    position:absolute;
+    width:42px;
+    padding:5px;
+    background:#111827;
+    border-radius:7px;
+    z-index:35;
+    text-align:center;
+}
+
+.signal1{
+    top:145px;
+    left:calc(50% + 65px);
+}
+
+.signal2{
+    left:calc(50% - 145px);
+    top:145px;
+}
+
+.signal3{
+    bottom:145px;
+    left:calc(50% - 105px);
+}
+
+.signal4{
+    right:calc(50% - 145px);
+    top:410px;
+}
+
+.light{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    margin:3px auto;
+    background:#374151;
+}
+
+.red.active{
+    background:#ef4444;
+    box-shadow:0 0 8px #ef4444;
+}
+
+.yellow.active{
+    background:#facc15;
+    box-shadow:0 0 8px #facc15;
+}
+
+.green.active{
+    background:#22c55e;
+    box-shadow:0 0 8px #22c55e;
+}
+
+.timer{
+    color:white;
+    font-size:11px;
+    font-weight:bold;
+    margin-top:3px;
+}
+
+/* =====================================================
+   VEHICLES
+===================================================== */
+
+.car{
+    position:absolute;
+    width:25px;
+    height:42px;
+    border-radius:6px;
+    z-index:20;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:17px;
+    transition:none;
+}
+
+.car.normal::before{
+    content:"";
+    width:15px;
+    height:10px;
+    background:#bfdbfe;
+    position:absolute;
+    top:5px;
+    border-radius:3px;
+}
+
+.emergency{
+    background:white !important;
+    border:3px solid #dc2626;
+}
+
+/* =====================================================
+   CRASH
+===================================================== */
+
+.crash{
+    position:absolute;
+    z-index:100;
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:rgba(239,68,68,.2);
+    border:3px solid #ef4444;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:45px;
+    animation:blast .5s infinite alternate;
+}
+
+@keyframes blast{
+    from{
+        transform:translate(-50%,-50%) scale(.9);
+    }
+    to{
+        transform:translate(-50%,-50%) scale(1.12);
+    }
+}
+
+/* =====================================================
+   RIGHT SIDE
+===================================================== */
+
+.right{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    padding:9px 4px;
+    border-bottom:1px solid #e5e7eb;
+    font-size:12px;
+    text-align:left;
+}
+
+th{
+    color:#6b7280;
+}
+
+.low{
+    color:#16a34a;
+    font-weight:bold;
+}
+
+.moderate{
+    color:#d97706;
+    font-weight:bold;
+}
+
+.heavy{
+    color:#dc2626;
+    font-weight:bold;
+}
+
+button{
+    width:100%;
+    border:none;
+    border-radius:7px;
+    padding:10px;
+    margin-bottom:7px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:12px;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+.start{
+    background:#16a34a;
+    color:white;
+}
+
+.pause{
+    background:#f59e0b;
+    color:white;
+}
+
+.reset{
+    background:#64748b;
+    color:white;
+}
+
+.add{
+    background:#2563eb;
+    color:white;
+}
+
+.emergency-btn{
+    background:#7c3aed;
+    color:white;
+}
+
+.accident-btn{
+    background:#dc2626;
+    color:white;
+}
+
+.alert{
+    display:none;
+    background:#fee2e2;
+    border:2px solid #ef4444;
+    padding:15px;
+    border-radius:8px;
+    color:#991b1b;
+}
+
+.alert h3{
+    margin-bottom:7px;
+}
+
+@media(max-width:1000px){
+    .layout{
+        grid-template-columns:1fr;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+    <div>
+        <h1>🚦 AI-Based Traffic Signal Optimizer</h1>
+        <p>
+            Smart Traffic Management & Emergency Response System
+        </p>
+    </div>
+
+    <div
+        class="status"
+        id="systemStatus">
+
+        ● SIMULATION RUNNING
+
+    </div>
+
+</div>
+
+
+<div class="container">
+
+<!-- =====================================================
+     STATISTICS
+===================================================== -->
+
+<div class="stats">
+
+    <div class="stat">
+
+        <div class="stat-title">
+            TOTAL VEHICLES
+        </div>
+
+        <div
+            class="stat-value"
+            id="totalVehicles">
+
+            12
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            HEAVY CONGESTION
+        </div>
+
+        <div
+            class="stat-value"
+            id="heavyRoads">
+
+            0
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            ACTIVE SIGNAL
+        </div>
+
+        <div
+            class="stat-value"
+            id="activeSignal">
+
+            ROAD 1
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            ACCIDENT STATUS
+        </div>
+
+        <div
+            class="stat-value"
+            id="accidentStatus">
+
+            NORMAL
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="layout">
+
+<!-- =====================================================
+     JUNCTION
+===================================================== -->
+
+<div class="card">
+
+    <h2>Live Junction Simulation</h2>
+
+    <div
+        class="junction"
+        id="junction">
+
+        <div class="horizontal-road"></div>
+
+        <div class="vertical-road"></div>
+
+
+        <div class="h-center"></div>
+
+        <div class="v-center"></div>
+
+        <div class="h-lane-top"></div>
+
+        <div class="h-lane-bottom"></div>
+
+        <div class="v-lane-left"></div>
+
+        <div class="v-lane-right"></div>
+
+
+        <!-- ROAD LABELS -->
+
+        <div class="label label1">
+            ROAD 1 ↓
+        </div>
+
+        <div class="label label2">
+            ROAD 2 →
+        </div>
+
+        <div class="label label3">
+            ROAD 3 ↑
+        </div>
+
+        <div class="label label4">
+            ROAD 4 ←
+        </div>
+
+
+        <!-- SIGNAL 1 -->
+
+        <div
+            class="signal signal1"
+            id="signal1">
+
+            <div class="light red active"></div>
+
+            <div class="light yellow"></div>
+
+            <div class="light green"></div>
+
+            <div
+                class="timer"
+                id="timer1">
+
+                18
+
+            </div>
+
+        </div>
+
+
+        <!-- SIGNAL 2 -->
+
+        <div
+            class="signal signal2"
+            id="signal2">
+
+            <div class="light red active"></div>
+
+            <div class="light yellow"></div>
+
+            <div class="light green"></div>
+
+            <div
+                class="timer"
+                id="timer2">
+
+                --
+
+            </div>
+
+        </div>
+
+
+        <!-- SIGNAL 3 -->
+
+        <div
+            class="signal signal3"
+            id="signal3">
+
+            <div class="light red active"></div>
+
+            <div class="light yellow"></div>
+
+            <div class="light green"></div>
+
+            <div
+                class="timer"
+                id="timer3">
+
+                --
+
+            </div>
+
+        </div>
+
+
+        <!-- SIGNAL 4 -->
+
+        <div
+            class="signal signal4"
+            id="signal4">
+
+            <div class="light red active"></div>
+
+            <div class="light yellow"></div>
+
+            <div class="light green"></div>
+
+            <div
+                class="timer"
+                id="timer4">
+
+                --
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     CONTROL PANEL
+===================================================== -->
+
+<div class="right">
+
+
+<div class="card">
+
+<h2>Traffic Analysis</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Road</th>
+<th>Cars</th>
+<th>Status</th>
+<th>Green</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+<td>Road 1</td>
+<td id="count1">3</td>
+<td id="status1" class="low">LOW</td>
+<td id="green1">18s</td>
+</tr>
+
+<tr>
+<td>Road 2</td>
+<td id="count2">3</td>
+<td id="status2" class="low">LOW</td>
+<td id="green2">18s</td>
+</tr>
+
+<tr>
+<td>Road 3</td>
+<td id="count3">3</td>
+<td id="status3" class="low">LOW</td>
+<td id="green3">18s</td>
+</tr>
+
+<tr>
+<td>Road 4</td>
+<td id="count4">3</td>
+<td id="status4" class="low">LOW</td>
+<td id="green4">18s</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<div class="card">
+
+<h2>Simulation Controls</h2>
+
+
+<button
+    class="start"
+    onclick="startSimulation()">
+
+    ▶ START SIMULATION
+
+</button>
+
+
+<button
+    class="pause"
+    onclick="pauseSimulation()">
+
+    ⏸ PAUSE SIMULATION
+
+</button>
+
+
+<button
+    class="reset"
+    onclick="resetSimulation()">
+
+    🔄 RESET
+
+</button>
+
+
+<hr style="margin:12px 0;">
+
+
+<button
+    class="add"
+    onclick="addVehicle(1)">
+
+    🚗 ADD CAR — ROAD 1
+
+</button>
+
+
+<button
+    class="add"
+    onclick="addVehicle(2)">
+
+    🚗 ADD CAR — ROAD 2
+
+</button>
+
+
+<button
+    class="add"
+    onclick="addVehicle(3)">
+
+    🚗 ADD CAR — ROAD 3
+
+</button>
+
+
+<button
+    class="add"
+    onclick="addVehicle(4)">
+
+    🚗 ADD CAR — ROAD 4
+
+</button>
+
+
+<hr style="margin:12px 0;">
+
+
+<button
+    class="emergency-btn"
+    onclick="addVehicle(1,true)">
+
+    🚑 ADD EMERGENCY — ROAD 1
+
+</button>
+
+
+<button
+    class="emergency-btn"
+    onclick="addVehicle(2,true)">
+
+    🚑 ADD EMERGENCY — ROAD 2
+
+</button>
+
+
+<button
+    class="emergency-btn"
+    onclick="addVehicle(3,true)">
+
+    🚑 ADD EMERGENCY — ROAD 3
+
+</button>
+
+
+<button
+    class="emergency-btn"
+    onclick="addVehicle(4,true)">
+
+    🚑 ADD EMERGENCY — ROAD 4
+
+</button>
+
+
+<hr style="margin:12px 0;">
+
+
+<button
+    class="accident-btn"
+    onclick="createAccident()">
+
+    💥 SIMULATE ACCIDENT
+
+</button>
+
+</div>
+
+
+<div
+    class="alert"
+    id="accidentAlert">
+
+    <h3>💥 ACCIDENT DETECTED</h3>
+
+    <p>
+        Location:
+        <strong id="accidentRoad">
+            Road 3
+        </strong>
+    </p>
+
+    <p>
+        Time:
+        <strong id="accidentTime">
+            --
+        </strong>
+    </p>
+
+    <p>👮 Police Alert: <b>SENT ✓</b></p>
+
+    <p>🏥 Hospital Alert: <b>SENT ✓</b></p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   SETTINGS
+===================================================== */
+
+const junction =
+    document.getElementById("junction");
+
+
+const CAR_LENGTH = 42;
+
+
+/*
+   This is the minimum distance between
+   the CENTER of two cars.
+
+   42 = car length
+   18 = safety gap
+*/
+
+const CAR_GAP = 18;
+
+const QUEUE_DISTANCE =
+    CAR_LENGTH + CAR_GAP;
+
+
+/* =====================================================
+   VEHICLE DATA
+===================================================== */
+
+let vehicles = {
+
+    1:[],
+    2:[],
+    3:[],
+    4:[]
+
+};
+let emergencyMode = false;
+let emergencyRoad = null;
+let accidentRoadNumber = null;
+let pendingSignalSwitch = false;
+
+
+
+let vehicleNumber = 0;
+
+let running = true;
+
+let currentRoad = 1;
+
+let countdown = 10;
+
+let movementTimer;
+
+
+/* =====================================================
+   EXACT LANE POSITIONS
+
+   These are the coordinates of the CENTER
+   of each vehicle.
+
+   DO NOT use the center of the road.
+===================================================== */
+
+
+/*
+ROAD 1
+
+↓
+
+Right lane of vertical road.
+*/
+
+function laneX1(){
+
+    return (
+        junction.clientWidth / 2
+        + 47
+    );
+
+}
+
+
+/*
+ROAD 2
+
+→
+
+Bottom lane of horizontal road.
+*/
+
+function laneY2(){
+
+    return 357;
+
+}
+
+
+/*
+ROAD 3
+
+↑
+
+Left lane of vertical road.
+*/
+
+function laneX3(){
+
+    return (
+        junction.clientWidth / 2
+        - 47
+    );
+
+}
+
+
+/*
+ROAD 4
+
+←
+
+Top lane of horizontal road.
+*/
+
+function laneY4(){
+
+    return 262;
+
+}
+
+
+/* =====================================================
+   CREATE CAR
+===================================================== */
+
+
+function addVehicle(road, emergency = false) {
+    const car = {
+        id: ++vehicleNumber,
+        road: road,
+        emergency: emergency,
+        position: getSpawnPosition(road),
+        element: null
+    };
+
+    const laneCars = vehicles[road];
+
+    if (laneCars.length > 0) {
+        const lastCar = laneCars[laneCars.length - 1];
+
+        if (road === 1 || road === 2) {
+            car.position = Math.min(
+                car.position,
+                lastCar.position - QUEUE_DISTANCE
+            );
+        } else {
+            car.position = Math.max(
+                car.position,
+                lastCar.position + QUEUE_DISTANCE
+            );
+        }
+    }
+
+    createCarElement(car);
+    vehicles[road].push(car);
+
+if (!emergency) {
+    updateNormalPriority();
+}
+
+updateStats();
+}
+
+
+/* =====================================================
+   SPAWN
+===================================================== */
+
+function getSpawnPosition(road) {
+    const w = junction.clientWidth;
+    const h = junction.clientHeight;
+
+    if (road === 1) return -50;  // Top, moving down
+    if (road === 2) return -50;  // Left, moving right
+    if (road === 3) return h + 50; // Bottom, moving up
+    if (road === 4) return w + 50; // Right, moving left
+}
+
+
+/* =====================================================
+   CREATE ELEMENT
+===================================================== */
+
+function createCarElement(car){
+
+    const element =
+        document.createElement("div");
+
+
+    element.className =
+        "car normal";
+
+
+    if(car.emergency){
+
+        element.classList.add(
+            "emergency"
+        );
+
+        element.innerHTML =
+            "🚑";
+
+    }
+    else{
+
+        const colours=[
+            "#2563eb",
+            "#dc2626",
+            "#16a34a",
+            "#f59e0b",
+            "#9333ea",
+            "#0891b2"
+        ];
+
+
+        element.style.background =
+            colours[
+                car.id %
+                colours.length
+            ];
+
+    }
+
+
+    junction.appendChild(
+        element
+    );
+
+
+    car.element =
+        element;
+
+
+    positionCar(car);
+
+}
+
+
+/* =====================================================
+   POSITION CAR
+
+   Each road has its own lane.
+
+   The transform is used so left/top
+   represents the CENTER of the car.
+===================================================== */
+
+function positionCar(car){
+
+    const road =
+        car.road;
+
+
+    if(road===1){
+
+        car.element.style.left =
+            laneX1()+"px";
+
+        car.element.style.top =
+            car.position+"px";
+
+        car.element.style.transform =
+            "translate(-50%,-50%) rotate(180deg)";
+
+    }
+
+
+    else if(road===2){
+
+        car.element.style.left =
+            car.position+"px";
+
+        car.element.style.top =
+            laneY2()+"px";
+
+        car.element.style.transform =
+            "translate(-50%,-50%) rotate(90deg)";
+
+    }
+
+
+    else if(road===3){
+
+        car.element.style.left =
+            laneX3()+"px";
+
+        car.element.style.top =
+            car.position+"px";
+
+        car.element.style.transform =
+            "translate(-50%,-50%) rotate(0deg)";
+
+    }
+
+
+    else if(road===4){
+
+        car.element.style.left =
+            car.position+"px";
+
+        car.element.style.top =
+            laneY4()+"px";
+
+        car.element.style.transform =
+            "translate(-50%,-50%) rotate(270deg)";
+
+    }
+
+}
+
+
+/* =====================================================
+   STOP LINES
+
+   Cars stop BEFORE the intersection.
+===================================================== */
+
+function stopPosition(road) {
+    const w = junction.clientWidth;
+    const h = junction.clientHeight;
+
+    // Stop BEFORE entering the central junction
+    if (road === 1) return 165;       // Moving down
+    if (road === 2) return w / 2 - 120; // Moving right
+    if (road === 3) return 455;       // Moving up
+    if (road === 4) return w / 2 + 120; // Moving left
+}
+
+
+/* =====================================================
+   GREEN CHECK
+===================================================== */
+
+
+
+
+function lightIsGreen(road) {
+    return road === currentRoad;
+}
+
+
+/* =====================================================
+   VEHICLE MOVEMENT
+===================================================== */
+
+
+function moveCars() {
+    if (!running) return;
+
+    for (let road = 1; road <= 4; road++) {
+
+        // Sort vehicles in their direction of travel.
+        vehicles[road].sort((a, b) => {
+            if (road === 1 || road === 2) {
+                return b.position - a.position;
+            }
+            return a.position - b.position;
+        });
+
+        for (let i = 0; i < vehicles[road].length; i++) {
+            const car = vehicles[road][i];
+            if (car.accidentStopped) {
+    positionCar(car);
+    continue;
+}
+            const forward = road === 1 || road === 2;
+            const speed = car.emergency ? 2.5 : 2.0;
+
+            let allowed = true;
+
+            // Keep a safe gap from the vehicle ahead.
+            if (i > 0) {
+                const front = vehicles[road][i - 1];
+
+                const gap = forward
+                    ? front.position - car.position
+                    : car.position - front.position;
+
+                if (gap < QUEUE_DISTANCE) {
+                    allowed = false;
+                }
+            }
+
+            // Stop at a red signal, except for emergency vehicles
+            // while restoring the previous movement behavior.
+            if (!lightIsGreen(road)) {
+                const stop = stopPosition(road);
+
+                if (forward && car.position >= stop) {
+                    allowed = false;
+                }
+
+                if (!forward && car.position <= stop) {
+                    allowed = false;
+                }
+
+                // Prevent stepping across the stop line.
+                if (allowed && forward &&
+                    car.position + speed > stop) {
+                    car.position = stop;
+                    allowed = false;
+                }
+
+                if (allowed && !forward &&
+                    car.position - speed < stop) {
+                    car.position = stop;
+                    allowed = false;
+                }
+            }
+
+            // Move the vehicle.
+            if (allowed) {
+                car.position += forward ? speed : -speed;
+            }
+
+            // Enforce spacing after movement.
+            if (i > 0) {
+                const front = vehicles[road][i - 1];
+
+                if (forward) {
+                    car.position = Math.min(
+                        car.position,
+                        front.position - QUEUE_DISTANCE
+                    );
+                } else {
+                    car.position = Math.max(
+                        car.position,
+                        front.position + QUEUE_DISTANCE
+                    );
+                }
+            }
+
+            positionCar(car);
+        }
+
+        removeCars(road);
+    }
+
+    updateStats();
+}
+
+/* =====================================================
+   REMOVE CARS THAT LEFT SCREEN
+===================================================== */
+
+function removeCars(road){
+
+    vehicles[road] =
+        vehicles[road].filter(
+            car=>{
+
+                let remove=false;
+
+
+                if(
+                    road===1 ||
+                    road===2
+                ){
+
+                    if(
+                        car.position >
+                        700
+                    ){
+
+                        remove=true;
+
+                    }
+
+                }
+                else{
+
+                    if(
+                        car.position <
+                        -80
+                    ){
+
+                        remove=true;
+
+                    }
+
+                }
+
+
+                if(remove){
+
+                    car.element.remove();
+
+                    return false;
+
+                }
+
+
+                return true;
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   TRAFFIC STATUS
+===================================================== */
+
+function trafficStatus(count){
+
+    if(count>=10)
+        return "HEAVY";
+
+    if(count>=5)
+        return "MODERATE";
+
+    return "LOW";
+
+}
+
+
+function greenTime(count){
+
+    let time =
+        15 + count*2;
+
+
+    if(time<15)
+        time=15;
+
+
+    if(time>45)
+        time=45;
+
+
+    return time;
+
+}
+
+
+/* =====================================================
+   UPDATE DASHBOARD
+===================================================== */
+
+
+function selectBusiestRoad() {
+    let selected = currentRoad;
+    let highest = -1;
+
+    for (let road = 1; road <= 4; road++) {
+        const count = vehicles[road].filter(
+            car => !car.emergency
+        ).length;
+
+        if (count > highest) {
+            highest = count;
+            selected = road;
+        }
+    }
+
+    return selected;
+}
+
+function updateNormalPriority() {
+    if (emergencyMode) return;
+
+    const busiest = selectBusiestRoad();
+
+    if (busiest !== currentRoad) {
+        currentRoad = busiest;
+        countdown = 10;
+        updateSignals();
+    }
+}
+
+function updateStats(){
+
+    let total=0;
+
+    let heavy=0;
+
+
+    for(
+        let road=1;
+        road<=4;
+        road++
+    ){
+
+        const count =
+            vehicles[road].length;
+
+
+        total+=count;
+
+
+        const status =
+            trafficStatus(count);
+
+
+        if(
+            status==="HEAVY"
+        ){
+
+            heavy++;
+
+        }
+
+
+        document.getElementById(
+            "count"+road
+        ).innerText=count;
+
+
+        document.getElementById(
+            "status"+road
+        ).innerText=status;
+
+
+        document.getElementById(
+            "status"+road
+        ).className =
+            status.toLowerCase();
+
+
+        document.getElementById(
+            "green"+road
+        ).innerText =
+            greenTime(count)+"s";
+
+    }
+
+
+    document.getElementById(
+        "totalVehicles"
+    ).innerText=total;
+
+
+    document.getElementById(
+        "heavyRoads"
+    ).innerText=heavy;
+
+
+    document.getElementById(
+        "activeSignal"
+    ).innerText =
+        "ROAD "+currentRoad;
+
+}
+
+
+/* =====================================================
+   SIGNALS
+===================================================== */
+
+function updateSignals(){
+
+    for(
+        let road=1;
+        road<=4;
+        road++
+    ){
+
+        const signal =
+            document.getElementById(
+                "signal"+road
+            );
+
+
+        const red =
+            signal.querySelector(
+                ".red"
+            );
+
+
+        const green =
+            signal.querySelector(
+                ".green"
+            );
+
+
+        
+if (lightIsGreen(road)) {
+    red.classList.remove("active");
+    green.classList.add("active");
+} else {
+    green.classList.remove("active");
+    red.classList.add("active");
+}
+
+
+        document.getElementById(
+            "timer"+road
+        ).innerText =
+            road===currentRoad
+                ? countdown
+                : "--";
+
+    }
+
+}
+
+
+/* =====================================================
+   CHANGE SIGNAL
+
+   Pick the road with the most traffic.
+===================================================== */
+
+
+
+function nextSignal() {
+    let selected = 1;
+    let highest = -1;
+
+    // During an emergency, give priority to the ambulance road.
+    if (emergencyMode) {
+        currentRoad = emergencyRoad;
+        countdown = 10;
+        updateSignals();
+        return;
+    }
+
+    // Normal operation: select the busiest road.
+    for (let road = 1; road <= 4; road++) {
+        const count = vehicles[road].filter(
+            car => !car.emergency && !car.accidentStopped
+        ).length;
+
+        if (count > highest) {
+            highest = count;
+            selected = road;
+        }
+    }
+
+    currentRoad = selected;
+    countdown = 10;
+    updateSignals();
+}
+
+
+/* =====================================================
+   COUNTDOWN
+===================================================== */
+
+
+function isIntersectionOccupied() {
+    const w = junction.clientWidth;
+    const left = w / 2 - 115;
+    const right = w / 2 + 115;
+
+    return [1, 2, 3, 4].some(road =>
+        vehicles[road].some(car => {
+            if (road === 1 || road === 3) {
+                return car.position >= 195 &&
+                       car.position <= 425;
+            }
+
+            return car.position >= left &&
+                   car.position <= right;
+        })
+    );
+}
+
+function chooseNextTrafficRoad() {
+    let selected = null;
+    let highest = 0;
+
+    for (let road = 1; road <= 4; road++) {
+        const count = vehicles[road].filter(
+            car => !car.emergency
+        ).length;
+
+        if (count > highest) {
+            highest = count;
+            selected = road;
+        }
+    }
+
+    return selected;
+}
+
+function switchSignalSafely() {
+    if (isIntersectionOccupied()) {
+        pendingSignalSwitch = true;
+        return;
+    }
+
+    pendingSignalSwitch = false;
+
+    if (emergencyMode) {
+        currentRoad = emergencyRoad;
+    } else {
+        const busiest = chooseNextTrafficRoad();
+
+        if (busiest !== null) {
+            currentRoad = busiest;
+        } else {
+            currentRoad = currentRoad % 4 + 1;
+        }
+    }
+
+    countdown = 10;
+    updateSignals();
+}
+
+
+
+function signalCountdown() {
+    if (!running) return;
+
+    if (pendingSignalSwitch) {
+        if (!isIntersectionOccupied()) {
+            switchSignalSafely();
+        }
+        return;
+    }
+
+    // During an emergency, keep the ambulance road green.
+    if (emergencyMode) {
+        currentRoad = emergencyRoad;
+        countdown--;
+        updateSignals();
+
+        if (countdown <= 0) {
+            countdown = 10;
+            updateSignals();
+        }
+        return;
+    }
+
+    // Normal traffic operation.
+    const waiting = vehicles[currentRoad].some(
+        car => !car.accidentStopped
+    );
+
+    if (!waiting) {
+        const busiest = chooseNextTrafficRoad();
+
+        if (busiest !== null && busiest !== currentRoad) {
+            switchSignalSafely();
+            return;
+        }
+    }
+
+    countdown--;
+    updateSignals();
+
+    if (countdown <= 0) {
+        switchSignalSafely();
+    }
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+
+function checkEarlySignalSwitch() {
+    // Never interrupt an active emergency priority.
+    if (emergencyMode) return;
+
+    // Check whether any normal cars are still waiting
+    // on the currently green road.
+    const carsRemaining = vehicles[currentRoad].some(car => {
+        return !car.emergency;
+    });
+
+    if (carsRemaining) return;
+
+    // Find another road that has waiting vehicles.
+    let nextRoad = null;
+    let highestCount = 0;
+
+    for (let road = 1; road <= 4; road++) {
+        if (road === currentRoad) continue;
+
+        const count = vehicles[road].filter(
+            car => !car.emergency
+        ).length;
+
+        if (count > highestCount) {
+            highestCount = count;
+            nextRoad = road;
+        }
+    }
+
+    // Switch immediately if another road has traffic.
+    if (nextRoad !== null) {
+        currentRoad = nextRoad;
+        countdown = 10;
+        updateSignals();
+    }
+}
+
+function startSimulation(){
+
+    if(running)
+        return;
+
+
+    running=true;
+
+
+    document.getElementById(
+        "systemStatus"
+    ).innerText =
+        "● SIMULATION RUNNING";
+
+
+    document.getElementById(
+        "systemStatus"
+    ).style.background =
+        "#16a34a";
+
+
+    movementTimer =
+        setInterval(
+            moveCars,
+            40
+        );
+
+}
+
+
+/* =====================================================
+   PAUSE
+===================================================== */
+
+function pauseSimulation(){
+
+    running=false;
+
+
+    clearInterval(
+        movementTimer
+    );
+
+
+    document.getElementById(
+        "systemStatus"
+    ).innerText =
+        "● SIMULATION PAUSED";
+
+
+    document.getElementById(
+        "systemStatus"
+    ).style.background =
+        "#f59e0b";
+
+}
+
+
+/* =====================================================
+   ACCIDENT
+===================================================== */
+
+
+
+function createAccident() {
+    if (emergencyMode) {
+        alert("An emergency is already in progress!");
+        return;
+    }
+
+    // Choose a road that currently has vehicles.
+    const availableRoads = [1, 2, 3, 4].filter(
+        road => vehicles[road].some(
+            car => !car.emergency && !car.accidentStopped
+        )
+    );
+
+    if (availableRoads.length === 0) {
+        alert("No available car to simulate an accident.");
+        return;
+    }
+
+    // Randomly select a road and a car.
+    const road = availableRoads[
+        Math.floor(Math.random() * availableRoads.length)
+    ];
+
+    const car = vehicles[road].find(
+        item => !item.emergency && !item.accidentStopped
+    );
+
+    // Freeze the crashed vehicle at its current position.
+    car.accidentStopped = true;
+    accidentRoadNumber = road;
+
+    // Show the crash marker at the actual car location.
+    const crash = document.createElement("div");
+    crash.className = "crash";
+    crash.textContent = "💥";
+    crash.style.position = "absolute";
+    crash.style.left = car.element.style.left;
+    crash.style.top = car.element.style.top;
+    crash.style.transform = "translate(-50%, -50%)";
+    crash.style.zIndex = "20";
+    junction.appendChild(crash);
+
+    // Update the accident dashboard.
+    document.getElementById("accidentAlert").style.display = "block";
+    document.getElementById("accidentRoad").textContent = "Road " + road;
+    document.getElementById("accidentTime").textContent =
+        new Date().toLocaleTimeString();
+
+    document.getElementById("accidentStatus").textContent =
+        "💥 ACCIDENT — ROAD " + road;
+    document.getElementById("accidentStatus").style.color = "#dc2626";
+
+    // Activate emergency priority for the affected road.
+    emergencyMode = true;
+    emergencyRoad = road;
+    currentRoad = road;
+    countdown = 10;
+
+    updateSignals();
+
+    // Dispatch the ambulance on the same road.
+    addVehicle(road, true);
+}
+
+
+/* =====================================================
+   DEFAULT TRAFFIC
+===================================================== */
+
+function createDefaultTraffic(){
+
+    for(
+        let road=1;
+        road<=4;
+        road++
+    ){
+
+        addVehicle(road);
+
+        addVehicle(road);
+
+        addVehicle(road);
+
+    }
+
+}
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+function resetSimulation(){
+
+    clearInterval(
+        movementTimer
+    );
+
+
+    /*
+       Remove all vehicles.
+    */
+
+    for(
+        let road=1;
+        road<=4;
+        road++
+    ){
+
+        vehicles[road].forEach(
+            car=>{
+
+                if(
+                    car.element
+                ){
+
+                    car.element.remove();
+
+                }
+
+            }
+        );
+
+
+        vehicles[road]=[];
+
+    }
+
+
+    /*
+       Remove accident.
+    */
+
+    document
+        .querySelectorAll(".crash")
+        .forEach(
+            element=>
+                element.remove()
+        );
+
+
+    document.getElementById(
+        "accidentAlert"
+    ).style.display="none";
+
+
+    document.getElementById(
+        "accidentStatus"
+    ).innerText="NORMAL";
+
+
+    document.getElementById(
+        "accidentStatus"
+    ).style.color="#172033";
+
+
+    currentRoad=1;
+
+    countdown=18;
+
+    running=true;
+
+
+    createDefaultTraffic();
+
+    updateSignals();
+
+    updateStats();
+
+
+    movementTimer =
+        setInterval(
+            moveCars,
+            40
+        );
+
+}
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+createDefaultTraffic();
+
+updateSignals();
+
+updateStats();
+
+
+movementTimer =
+    setInterval(
+        moveCars,
+        40
+    );
+
+
+setInterval(
+    signalCountdown,
+    1000
+);
+
+</script>
+
+</body>
+</html>
